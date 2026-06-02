@@ -87,14 +87,33 @@ def _download_us(codes, start_date, end_date):
     start = pd.to_datetime(start_date, format='%Y%m%d').strftime('%Y-%m-%d')
     end   = pd.to_datetime(end_date,   format='%Y%m%d').strftime('%Y-%m-%d')
     try:
-        if len(codes) == 1:
-            raw   = yf.download(codes[0], start=start, end=end, progress=False, auto_adjust=True)
-            close = raw[['Close']].rename(columns={'Close': codes[0]})
-        else:
-            raw   = yf.download(codes, start=start, end=end, progress=False, auto_adjust=True)
-            close = raw['Close']
+        raw = yf.download(codes, start=start, end=end, progress=False, auto_adjust=True)
+
+        if raw.empty:
+            return json.dumps({'错误': 'yfinance 返回空数据，请检查股票代码和日期范围'}, ensure_ascii=False)
+
+        # yfinance 不同版本列结构不同，兼容处理
+        if isinstance(raw.columns, pd.MultiIndex):
+            level0 = raw.columns.get_level_values(0).unique().tolist()
+            price_col = 'Close' if 'Close' in level0 else ('Adj Close' if 'Adj Close' in level0 else None)
+            if price_col is None:
+                return json.dumps({'错误': f'找不到收盘价列，现有字段：{level0}'}, ensure_ascii=False)
+            close = raw[price_col]
+            if isinstance(close, pd.Series):          # 单股票也可能返回 Series
+                close = close.to_frame(name=codes[0])
             close.columns = [str(c) for c in close.columns]
-        return close.pct_change().dropna()
+        else:
+            # 单股票直接下载时列是平铺的
+            price_col = 'Close' if 'Close' in raw.columns else 'Adj Close'
+            close = raw[[price_col]].rename(columns={price_col: codes[0]})
+
+        close = close.dropna(how='all')
+        returns = close.pct_change().dropna()
+
+        if returns.empty or len(returns) < 5:
+            return json.dumps({'错误': '有效数据不足，请确认股票代码正确或换个日期范围'}, ensure_ascii=False)
+
+        return returns
     except Exception as e:
         return json.dumps({'错误': f'yfinance 下载失败：{e}'}, ensure_ascii=False)
 
@@ -118,6 +137,9 @@ def markowitz_optimize(risk_free_rate: float = 0.02) -> str:
     returns_df = _portfolio_data['returns']
     stocks     = _portfolio_data['stocks']
     n          = len(stocks)
+
+    if returns_df.empty or len(returns_df) < 5 or n == 0:
+        return '错误：数据为空或不足，无法进行优化。请检查股票代码和日期范围后重试。'
     mean_ret   = returns_df.mean().values
     cov_mat    = returns_df.cov().values * 252
 
