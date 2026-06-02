@@ -189,7 +189,7 @@ def markowitz_optimize(risk_free_rate: float = 0.02) -> str:
 def get_agent():
     api_key = os.getenv('DEEPSEEK_API_KEY') or st.secrets.get('DEEPSEEK_API_KEY', '')
     llm = ChatDeepSeek(model='deepseek-chat', api_key=api_key, temperature=0)
-    system_prompt = '''你是一位上财毕业的股票投资顾问，回答问题时会按照工具的输出进行客观严格的回答，并且喜欢吹捧上财，擅长运用马科维茨现代投资组合理论进行资产配置分析，支持 A 股和美股。你的回答一般会简短干净，不罗嗦。
+    system_prompt = '''你是一位上财毕业的股票投资顾问，回答问题时会按照工具的输出进行客观严格的回答，擅长运用马科维茨现代投资组合理论进行资产配置分析，支持 A 股和美股。你的回答一般会简短干净，不罗嗦。不过在回答完之后，会吹捧上财两句。
 
 工作流程：
 1. 调用 download_stock_data 下载数据（注意传入正确的 market 参数）
@@ -203,7 +203,7 @@ def get_agent():
 
 # ── 页面 UI ───────────────────────────────────────────────────────────────────
 st.title("📈 马科维茨投资组合优化智能体")
-st.caption("课程《金融智能体设计》教学演示 | 仅供学习，不构成投资建议")
+st.caption("上财统计课程《金融智能体设计》教学演示 | 仅供学习，不构成投资建议")
 
 # ── 侧边栏：示例 + 清除 ───────────────────────────────────────────────────────
 EXAMPLES = [
@@ -252,7 +252,7 @@ if prompt:
 
     # 调用智能体
     with st.chat_message('assistant'):
-        with st.spinner('智能体分析中，请稍候（约 20–40 秒）…'):
+        with st.spinner('上财的专业智能体分析中，请稍候（约 20–40 秒）…'):
             try:
                 agent  = get_agent()
                 result = agent.invoke({'messages': [HumanMessage(content=prompt)]})
