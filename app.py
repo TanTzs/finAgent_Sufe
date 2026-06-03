@@ -7,7 +7,8 @@ from scipy.optimize import minimize
 import streamlit as st
 from dotenv import load_dotenv
 from langchain_core.tools import tool
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from datetime import date
 from langchain_deepseek import ChatDeepSeek
 from langchain.agents import create_agent
 
@@ -265,7 +266,8 @@ if prompt:
             try:
                 agent = get_agent()
                 # 把完整对话历史传给 agent，使其具备上下文记忆
-                history_messages = []
+                # 首条 SystemMessage 注入当前日期，让 LLM 能正确理解"最近"、"今年"等时间描述
+                history_messages = [SystemMessage(content=f"今天是 {date.today().strftime('%Y年%m月%d日')}。")]
                 for msg in st.session_state['history'][:-1]:  # 不含刚加入的本轮用户消息
                     if msg['role'] == 'user':
                         history_messages.append(HumanMessage(content=msg['content']))
