@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"e:\\\\Sufe\\\\agentDev\\\\.venv\\\\Scripts\\\\python.exe\" -c \"import langchain.agents as la; print\\([x for x in dir\\(la\\) if not x.startswith\\('_'\\)]\\)\")",
+      "PowerShell(& \"e:\\\\Sufe\\\\agentDev\\\\.venv\\\\Scripts\\\\python.exe\" -c \"from langchain.agents import create_agent; help\\(create_agent\\)\" 2>&1)",
+      "PowerShell(& \"e:\\\\Sufe\\\\agentDev\\\\.venv\\\\Scripts\\\\python.exe\" -c \"import streamlit; print\\('streamlit', streamlit.__version__\\)\")",
+      "PowerShell(Stop-Process -Name \"streamlit\" -ErrorAction SilentlyContinue)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ],
+    "additionalDirectories": [
+      "E:\\Sufe\\agentDev",
+      "C:\\Users\\Tan\\.streamlit"
+    ]
+  }
+}
