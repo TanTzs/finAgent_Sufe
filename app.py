@@ -7,7 +7,7 @@ from scipy.optimize import minimize
 import streamlit as st
 from dotenv import load_dotenv
 from langchain_core.tools import tool
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_deepseek import ChatDeepSeek
 from langchain.agents import create_agent
 
@@ -263,8 +263,16 @@ if prompt:
     with st.chat_message('assistant'):
         with st.spinner('上财的专业智能体分析中，请稍候（约 20–40 秒）…'):
             try:
-                agent  = get_agent()
-                result = agent.invoke({'messages': [HumanMessage(content=prompt)]})
+                agent = get_agent()
+                # 把完整对话历史传给 agent，使其具备上下文记忆
+                history_messages = []
+                for msg in st.session_state['history'][:-1]:  # 不含刚加入的本轮用户消息
+                    if msg['role'] == 'user':
+                        history_messages.append(HumanMessage(content=msg['content']))
+                    else:
+                        history_messages.append(AIMessage(content=msg['content']))
+                history_messages.append(HumanMessage(content=prompt))
+                result = agent.invoke({'messages': history_messages})
                 answer = result['messages'][-1].content
             except Exception as e:
                 answer = f'分析出错：{e}'
