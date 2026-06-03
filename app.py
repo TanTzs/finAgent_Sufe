@@ -2,7 +2,6 @@ import os
 import json
 import numpy as np
 import pandas as pd
-import akshare as ak
 import yfinance as yf
 from scipy.optimize import minimize
 import streamlit as st
@@ -16,7 +15,7 @@ load_dotenv()
 
 # ── 页面配置 ──────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="马科维茨投资组合优化智能体",
+    page_title="上财统院-投资组合优化智能体",
     page_icon="📈",
     layout="wide",
 )
@@ -69,18 +68,24 @@ def download_stock_data(
     return json.dumps(summary, ensure_ascii=False, indent=2)
 
 
+def _a_code_to_yahoo(code: str) -> str:
+    """将6位A股代码转为 Yahoo Finance 格式（全球可访问，无需依赖国内数据源）。"""
+    if code.startswith('6'):
+        return f'{code}.SS'          # 上交所
+    elif code.startswith(('0', '3')):
+        return f'{code}.SZ'          # 深交所
+    elif code.startswith(('4', '8')):
+        return f'{code}.BJ'          # 北交所
+    return code
+
+
 def _download_a(codes, start_date, end_date):
-    dfs = {}
-    for code in codes:
-        try:
-            df = ak.stock_zh_a_hist(
-                symbol=code, period='daily',
-                start_date=start_date, end_date=end_date, adjust='qfq',
-            )
-            dfs[code] = df.set_index('日期')['涨跌幅'] / 100
-        except Exception as e:
-            return json.dumps({'错误': f'下载 {code} 失败：{e}'}, ensure_ascii=False)
-    return pd.DataFrame(dfs).dropna()
+    """A股数据改用 Yahoo Finance 下载，解决境外服务器无法访问国内数据源的问题。"""
+    yahoo_codes = [_a_code_to_yahoo(c) for c in codes]
+    result = _download_us(yahoo_codes, start_date, end_date)
+    if isinstance(result, pd.DataFrame):
+        result = result.rename(columns=dict(zip(yahoo_codes, codes)))
+    return result
 
 
 def _download_us(codes, start_date, end_date):
